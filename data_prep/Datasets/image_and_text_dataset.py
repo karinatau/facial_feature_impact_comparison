@@ -3,7 +3,7 @@ from torchvision.datasets import ImageFolder
 import csv
 
 VECTOR_LEN = 15
-STDEV = 0.01
+# STDEV = 0.01
 
 
 class ImageAndTextDataset(ImageFolder):
@@ -44,7 +44,8 @@ class ImageAndTextDataset(ImageFolder):
             label = self.target_transform(label)
         context_vector_label = path.split("/")[-2]
         # add randomness to the context vector
-        vector = self.context_vectors[context_vector_label] + \
-            torch.normal(mean=0.0, std=STDEV, size=self.context_vectors[context_vector_label].size())
+        vector = self.context_vectors[context_vector_label]
+        # vector = self.context_vectors[context_vector_label] + \
+        #     torch.normal(mean=0.0, std=STDEV, size=self.context_vectors[context_vector_label].size())
 
         return image, label, vector
