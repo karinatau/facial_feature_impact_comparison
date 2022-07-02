@@ -5,6 +5,9 @@ from torch.utils.data import DataLoader
 from data_prep.Datasets.image_and_text_dataset import ImageAndTextDataset
 from modelling.models.context_vgg16 import context_vgg16
 import pandas as pd
+from scipy.stats import entropy
+import matplotlib.pyplot as plt
+
 
 PATH_IMAGE_FOLDER = "/home/ssd_storage/datasets/processed/context_vggfaces_num-classes_1050_{'train': 0.7, 'val': 0.2, 'test': 0.1}/test"
 PATH_CSV = "/home/context/facial_feature_impact_comparison/extracted_data/sanity_check.csv"
@@ -38,6 +41,7 @@ def testing():
     
     y_pred_list = []
     y_actual_list = []
+    y_pred_entropy_list = []
     num_correct = 0
     sum_loss = 0
     with torch.no_grad():
@@ -54,12 +58,19 @@ def testing():
 
             y_actual_list.extend(labels.tolist())
             y_pred_list.extend(y_pred_tags.tolist())
-    
-    df = pd.DataFrame(list(zip(y_actual_list, y_pred_list)), columns=['actual class', 'predicted class'])
+
+            y_pred_softmax = torch.softmax(y_test_pred, dim = 1).cpu()
+            y_pred_entropy_list.extend(entropy(y_pred_softmax, axis=1))
+
+    df = pd.DataFrame(list(zip(y_actual_list, y_pred_list, y_pred_entropy_list)), columns=['actual class', 'predicted class', 'entropy'])
     df.to_csv(PATH_RESULTS, index=False)
 
     print("loss: " + str(sum_loss.item()/len(y_actual_list)))
     print("accuracy: " + str(num_correct/len(y_actual_list)))
+
+    plt.hist(y_pred_entropy_list, bins = 50)
+    plt.xlabel("Entropy") 
+    plt.show()
 
 def load_model_and_optimizer_loc(model: torch.nn.Module, model_location=None):
     with open(model_location, 'br') as f:
