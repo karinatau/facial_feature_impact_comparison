@@ -6,7 +6,6 @@ from data_prep.Datasets.image_and_text_dataset import ImageAndTextDataset
 from modelling.models.context_vgg16 import context_vgg16
 import pandas as pd
 from scipy.stats import entropy
-import matplotlib.pyplot as plt
 
 
 PATH_IMAGE_FOLDER = "/home/ssd_storage/datasets/processed/context_vggfaces_num-classes_1050_{'train': 0.7, 'val': 0.2, 'test': 0.1}/test"
@@ -68,9 +67,6 @@ def testing():
     print("loss: " + str(sum_loss.item()/len(y_actual_list)))
     print("accuracy: " + str(num_correct/len(y_actual_list)))
 
-    plt.hist(y_pred_entropy_list, bins = 50)
-    plt.xlabel("Entropy") 
-    plt.show()
 
 def load_model_and_optimizer_loc(model: torch.nn.Module, model_location=None):
     with open(model_location, 'br') as f:
