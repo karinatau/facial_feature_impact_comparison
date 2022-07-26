@@ -7,9 +7,20 @@ from modelling.models.context_vgg16 import context_vgg16
 import pandas as pd
 from scipy.stats import entropy
 
+# PATH_IMAGE_FOLDER:
+#   test1 -> /home/ssd_storage/datasets/processed/context_vggfaces_num-classes_1050_{'train': 0.7, 'val': 0.2, 'test': 0.1}/test
+#   test2 -> /home/context/dataset/test_unfamiliar
+#   test3 -> /home/ssd_storage/datasets/processed/context_vggfaces_num-classes_1050_{'train': 0.7, 'val': 0.2, 'test': 0.1}/test
+#   test3 -> /home/context/dataset/test_unfamiliar
+
+# PATH_CSV:
+#   test1 -> /home/context/facial_feature_impact_comparison/extracted_data/train.csv
+#   test2 -> /home/context/facial_feature_impact_comparison/extracted_data/test2.csv
+#   test3 -> /home/context/facial_feature_impact_comparison/extracted_data/test3.csv
+#   test4 -> /home/context/facial_feature_impact_comparison/extracted_data/test4.csv
 
 PATH_IMAGE_FOLDER = "/home/ssd_storage/datasets/processed/context_vggfaces_num-classes_1050_{'train': 0.7, 'val': 0.2, 'test': 0.1}/test"
-PATH_CSV = "/home/context/facial_feature_impact_comparison/extracted_data/sanity_check.csv"
+PATH_CSV = "/home/context/facial_feature_impact_comparison/extracted_data/test3.csv"
 PATH_MODEL = "/home/ssd_storage/experiments/students/context/context_vgg16/context_vgg16/models/best.pth"
 PATH_RESULTS = "/home/context/results.csv"
 BATCH_SIZE=32
