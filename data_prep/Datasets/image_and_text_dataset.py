@@ -4,7 +4,7 @@ import csv
 import random
 
 VECTOR_LEN = 15
-STDEV = 2.533
+STDEV = 5.066
 PROB = 0.95
 
 
