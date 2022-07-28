@@ -5,7 +5,7 @@ import random
 
 VECTOR_LEN = 15
 STDEV = 5.066
-PROB = 0.95
+PROB = 0.9
 
 
 class ImageAndTextDataset(ImageFolder):
@@ -44,17 +44,17 @@ class ImageAndTextDataset(ImageFolder):
             image = self.transform(image)
         if self.target_transform is not None:
             label = self.target_transform(label)
-        #
-        # rand_prob = random.random()
-        # # if random probability < PROB the context vector is the original
-        # # else the context vector is rendom
-        # if rand_prob < PROB:
-        #     context_vector_label = path.split("/")[-2]
-        # else:
-        #     context_vector_label = random.choice(list(self.context_vectors))
+
+        rand_prob = random.random()
+        # if random probability < PROB the context vector is the original
+        # else the context vector is rendom
+        if rand_prob < PROB:
+            context_vector_label = path.split("/")[-2]
+        else:
+            context_vector_label = random.choice(list(self.context_vectors))
 
         # add randomness to the context vector
-        context_vector_label = path.split("/")[-2]
+        # context_vector_label = path.split("/")[-2]
         # vector = self.context_vectors[context_vector_label]
         vector = self.context_vectors[context_vector_label] + torch.normal(mean=0.0, std=STDEV, size=self.context_vectors[context_vector_label].size())
         
