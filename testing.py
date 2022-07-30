@@ -20,22 +20,23 @@ from scipy.stats import entropy
 #   test4 -> /home/context/facial_feature_impact_comparison/extracted_data/test4.csv
 
 PATH_IMAGE_FOLDER = "/home/ssd_storage/datasets/processed/context_vggfaces_num-classes_1050_{'train': 0.7, 'val': 0.2, 'test': 0.1}/test"
-PATH_CSV = "/home/context/facial_feature_impact_comparison/extracted_data/test3.csv"
-PATH_MODEL = "/home/ssd_storage/experiments/students/context/context_vgg16/context_vgg16/models/best.pth"
+PATH_CSV = "/home/context/facial_feature_impact_comparison/extracted_data/train.csv"
+PATH_MODEL = "/home/ssd_storage/experiments/students/context/context_vgg16_5/context_vgg16/models/best.pth"
 PATH_RESULTS = "/home/context/results.csv"
-BATCH_SIZE=32
-WORKERS=4
+BATCH_SIZE = 128
+WORKERS = 4
 NUM_CLASSES = 1050
+
 
 def testing():
     transform = transforms.Compose(
-    [transforms.Resize(size=(224, 224)),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+        [transforms.Resize(size=(224, 224)),
+         transforms.ToTensor(),
+         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     dataset = ImageAndTextDataset(path=PATH_IMAGE_FOLDER,
-                                transforms=transform,
-                                target_transforms=None,
-                                vector_csv_path=PATH_CSV)
+                                  transforms=transform,
+                                  target_transforms=None,
+                                  vector_csv_path=PATH_CSV)
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     pin_memory = torch.cuda.is_available()
     dataloader = DataLoader(
@@ -48,11 +49,17 @@ def testing():
     model = context_vgg16(False, num_classes=NUM_CLASSES).to(device)
     criterion = nn.CrossEntropyLoss().to(device)
     model = load_model_and_optimizer_loc(model, PATH_MODEL)
-    
+
+    df = pd.read_csv(PATH_CSV)
+    label_to_context_vector_label_dict = {label: path.split("/")[-2] for path, label in dataset.samples}
+    get_SOC_code = lambda label: df[df.iloc[:, 0] == label_to_context_vector_label_dict[label]]["O*NET-SOC Code"].iloc[
+        0]
+
     y_pred_list = []
     y_actual_list = []
     y_pred_entropy_list = []
     num_correct = 0
+    num_correct_SOC_code = 0
     sum_loss = 0
     with torch.no_grad():
         model.eval()
@@ -63,30 +70,36 @@ def testing():
 
             y_test_pred = model(images, context_vectors)
             sum_loss += criterion(y_test_pred, labels)
-            _, y_pred_tags = torch.max(y_test_pred, dim = 1)
+            _, y_pred_tags = torch.max(y_test_pred, dim=1)
             num_correct += sum(labels == y_pred_tags).item()
 
             y_actual_list.extend(labels.tolist())
             y_pred_list.extend(y_pred_tags.tolist())
 
-            y_pred_softmax = torch.softmax(y_test_pred, dim = 1).cpu()
+            y_pred_softmax = torch.softmax(y_test_pred, dim=1).cpu()
             y_pred_entropy_list.extend(entropy(y_pred_softmax, axis=1))
 
-    df = pd.DataFrame(list(zip(y_actual_list, y_pred_list, y_pred_entropy_list)), columns=['actual class', 'predicted class', 'entropy'])
+            labels_SOC_code = labels.to(device="cpu", dtype=torch.float64).apply_(get_SOC_code)
+            y_pred_tags_SOC_code = y_pred_tags.to(device="cpu", dtype=torch.float64).apply_(get_SOC_code)
+            num_correct_SOC_code += sum(labels_SOC_code == y_pred_tags_SOC_code).item()
+
+    df = pd.DataFrame(list(zip(y_actual_list, y_pred_list, y_pred_entropy_list)),
+                      columns=['actual class', 'predicted class', 'entropy'])
     df.to_csv(PATH_RESULTS, index=False)
 
-    print("loss: " + str(sum_loss.item()/len(y_actual_list)))
-    print("accuracy: " + str(num_correct/len(y_actual_list)))
+    print("loss: " + str(sum_loss.item() / len(y_actual_list)))
+    print("accuracy: " + str(num_correct / len(y_actual_list)))
+    print("accuracy_SOC_code: " + str(num_correct_SOC_code / len(y_actual_list)))
 
 
 def load_model_and_optimizer_loc(model: torch.nn.Module, model_location=None):
     with open(model_location, 'br') as f:
         print("Loading model from: ", model_location)
         model_checkpoint = torch.load(f)
-        state_dict_updated = {key[7:] : value for key, value in model_checkpoint['state_dict'].items()}
+        state_dict_updated = {key[7:]: value for key, value in model_checkpoint['state_dict'].items()}
         model.load_state_dict(state_dict_updated)
     return model
-    
+
 
 if __name__ == '__main__':
     testing()
