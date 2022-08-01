@@ -5,7 +5,7 @@ import random
 
 VECTOR_LEN = 15
 STDEV = 5.066
-PROB = 0.9
+PROB = 0.95
 
 
 class ImageAndTextDataset(ImageFolder):
