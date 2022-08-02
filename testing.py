@@ -87,6 +87,7 @@ def testing():
                       columns=['actual class', 'predicted class', 'entropy'])
     df.to_csv(PATH_RESULTS, index=False)
 
+    print("saved to: ", PATH_RESULTS)
     print("loss: " + str(sum_loss.item() / len(y_actual_list)))
     print("accuracy: " + str(num_correct / len(y_actual_list)))
     print("accuracy_SOC_code: " + str(num_correct_SOC_code / len(y_actual_list)))
