@@ -13,7 +13,7 @@ class ImageAndTextDataset(ImageFolder):
     A dataset for retrieving images with text vectors
     """
 
-    def __init__(self, path, transforms, target_transforms, vector_csv_path):
+    def __init__(self, path, transforms, target_transforms, vector_csv_path, mode="train"):
         """
         __init__ is run once upon initializing the Dataset object
         :param vector_csv_path: Path to a csv file representing a list of contextual vectors
@@ -32,6 +32,7 @@ class ImageAndTextDataset(ImageFolder):
                     continue
                 self.context_vectors[context_vector_label] = torch.Tensor(
                     [float(i) for i in row[1:1+VECTOR_LEN]])
+        self.mode = "train"
 
     def __getitem__(self, idx):
         """
@@ -45,17 +46,20 @@ class ImageAndTextDataset(ImageFolder):
         if self.target_transform is not None:
             label = self.target_transform(label)
 
-        rand_prob = random.random()
-        # if random probability < PROB the context vector is the original
-        # else the context vector is rendom
-        if rand_prob < PROB:
-            context_vector_label = path.split("/")[-2]
-        else:
-            context_vector_label = random.choice(list(self.context_vectors))
+        context_vector_label = path.split("/")[-2]
+        vector = self.context_vectors[context_vector_label]
 
-        # add randomness to the context vector
-        # context_vector_label = path.split("/")[-2]
-        # vector = self.context_vectors[context_vector_label]
-        vector = self.context_vectors[context_vector_label] + torch.normal(mean=0.0, std=STDEV, size=self.context_vectors[context_vector_label].size())
+        if self.mode == "train":
+            rand_prob = random.random()
+            # if random probability < PROB the context vector is the original
+            # else the context vector is rendom
+            if rand_prob < PROB:
+                context_vector_label = path.split("/")[-2]
+            else:
+                context_vector_label = random.choice(list(self.context_vectors))
+
+        if self.mode == "train" or self.mode == "test":
+            # add randomness to the context vector
+            vector = self.context_vectors[context_vector_label] + torch.normal(mean=0.0, std=STDEV, size=self.context_vectors[context_vector_label].size())
         
         return image, label, vector
