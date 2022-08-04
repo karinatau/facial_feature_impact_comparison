@@ -16,13 +16,13 @@ WORKERS = 4
 NUM_CLASSES = 1050
 
 
-def testing(path_image_folder=PATH_IMAGE_FOLDER, path_csv_train=PATH_CSV_TRAIN, path_csv_test=PATH_CSV_TRAIN,
+def testing(path_image_train=PATH_IMAGE_FOLDER, path_image_test=PATH_IMAGE_FOLDER, path_csv_train=PATH_CSV_TRAIN, path_csv_test=PATH_CSV_TRAIN,
             path_model=PATH_MODEL, path_results=PATH_RESULTS, which=1, mode="test"):
     transform = transforms.Compose(
         [transforms.Resize(size=(224, 224)),
          transforms.ToTensor(),
          transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
-    dataset_test = ImageAndTextDataset(path=path_image_folder,
+    dataset_test = ImageAndTextDataset(path=path_image_test,
                                        transforms=transform,
                                        target_transforms=None,
                                        vector_csv_path=path_csv_test, mode=mode)
@@ -39,15 +39,21 @@ def testing(path_image_folder=PATH_IMAGE_FOLDER, path_csv_train=PATH_CSV_TRAIN, 
     criterion = nn.CrossEntropyLoss().to(device)
     model = load_model_and_optimizer_loc(model, path_model)
 
-    label_to_context_vector_label_dict = {label: path.split("/")[-2] for path, label in dataset_test.samples}
+    label_to_context_vector_label_dict_test = {label: path.split("/")[-2] for path, label in dataset_test.samples}
+
+    dataset_train = ImageAndTextDataset(path=path_image_train,
+                                       transforms=transform,
+                                       target_transforms=None,
+                                       vector_csv_path=path_csv_test, mode=mode)
+    label_to_context_vector_label_dict_train = {label: path.split("/")[-2] for path, label in dataset_train.samples}
 
     df_test = pd.read_csv(path_csv_test)
     get_SOC_code_test = lambda label: \
-    df_test[df_test.iloc[:, 0] == label_to_context_vector_label_dict[label]]["O*NET-SOC Code"].iloc[0]
+    df_test[df_test.iloc[:, 0] == label_to_context_vector_label_dict_test[label]]["O*NET-SOC Code"].iloc[0]
 
     df_train = pd.read_csv(path_csv_train)
     get_SOC_code_train = lambda label: \
-    df_train[df_train.iloc[:, 0] == label_to_context_vector_label_dict[label]]["O*NET-SOC Code"].iloc[0]
+    df_train[df_train.iloc[:, 0] == label_to_context_vector_label_dict_train[label]]["O*NET-SOC Code"].iloc[0]
 
     y_pred_list = []
     y_actual_list = []
@@ -81,7 +87,7 @@ def testing(path_image_folder=PATH_IMAGE_FOLDER, path_csv_train=PATH_CSV_TRAIN, 
 
             if which == 4:
                 labels_SOC_code = labels.to(device="cpu", dtype=torch.float64).apply_(get_SOC_code_test)
-                y_pred_tags_SOC_code = y_pred_tags.to(device="cpu", dtype=torch.float64).apply_(get_SOC_code_test)
+                y_pred_tags_SOC_code = y_pred_tags.to(device="cpu", dtype=torch.float64).apply_(get_SOC_code_train)
                 correct_SOC_code = labels_SOC_code == y_pred_tags_SOC_code
                 num_correct_test += sum(correct_SOC_code).item()
                 test4_list.extend(correct_SOC_code.tolist())
@@ -128,31 +134,31 @@ def run_test(which=1, path_csv_test=PATH_CSV_TRAIN):
     path_image_folder_not_common = "/home/context/dataset/test_unfamiliar"
     path_results = "/home/context/new_tests/results_" + path_csv_test.split("/")[-1]
     if which == 1:
-        testing(path_image_folder=path_image_folder_common, path_csv_train=PATH_CSV_TRAIN, path_csv_test=path_csv_test,
+        testing(path_image_test=path_image_folder_common, path_csv_train=PATH_CSV_TRAIN, path_csv_test=path_csv_test,
                 path_results=path_results, which=1)
     elif which == 3:
-        testing(path_image_folder=path_image_folder_common, path_csv_train=PATH_CSV_TRAIN, path_csv_test=path_csv_test,
+        testing(path_image_test=path_image_folder_common, path_csv_train=PATH_CSV_TRAIN, path_csv_test=path_csv_test,
                 path_results=path_results, which=3)
     elif which == 4:
-        testing(path_image_folder=path_image_folder_not_common, path_csv_train=PATH_CSV_TRAIN,
+        testing(path_image_test=path_image_folder_not_common, path_csv_train=PATH_CSV_TRAIN,
                 path_csv_test=path_csv_test,
                 path_results=path_results, which=4)
 
 
 def run_all_our_test():
-    print("test 1:")
-    run_test(which=1, path_csv_test=PATH_CSV_TRAIN)
-
-    print("test 3:")
-    run_test(which=3, path_csv_test="/home/context/facial_feature_impact_comparison/extracted_data/test3.csv")
-
-    print("test 3 inside family:")
-    run_test(which=3,
-             path_csv_test="/home/context/facial_feature_impact_comparison/extracted_data/test3_inside_family.csv")
-
-    print("test 3 outside family:")
-    run_test(which=3,
-             path_csv_test="/home/context/facial_feature_impact_comparison/extracted_data/test3_outside_family.csv")
+    # print("test 1:")
+    # run_test(which=1, path_csv_test=PATH_CSV_TRAIN)
+    #
+    # print("test 3:")
+    # run_test(which=3, path_csv_test="/home/context/facial_feature_impact_comparison/extracted_data/test3.csv")
+    #
+    # print("test 3 inside family:")
+    # run_test(which=3,
+    #          path_csv_test="/home/context/facial_feature_impact_comparison/extracted_data/test3_inside_family.csv")
+    #
+    # print("test 3 outside family:")
+    # run_test(which=3,
+    #          path_csv_test="/home/context/facial_feature_impact_comparison/extracted_data/test3_outside_family.csv")
 
     print("test 4:")
     run_test(which=4, path_csv_test="/home/context/facial_feature_impact_comparison/extracted_data/test4.csv")
@@ -168,7 +174,7 @@ def run_test_sanity_check():
     path_results = "/home/context/new_tests/results_sanity_check.csv"
 
     print("sanity_check:")
-    testing(path_image_folder=PATH_IMAGE_FOLDER, path_csv_train=path_sanity_check, path_csv_test=path_sanity_check,
+    testing(path_image_test=PATH_IMAGE_FOLDER, path_csv_train=path_sanity_check, path_csv_test=path_sanity_check,
             path_model=path_model, path_results=path_results, which=1, mode="sanity_check")
 
 
