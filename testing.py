@@ -52,23 +52,29 @@ def testing(path_image_folder=PATH_IMAGE_FOLDER, path_csv_train=PATH_CSV_TRAIN, 
     y_pred_list = []
     y_actual_list = []
     y_pred_entropy_list = []
+    y_pred_scores_list = []
+    test4_list = []
+    test3_list = []
+    paths_list = []
     num_correct = 0
     num_correct_test = 0
     sum_loss = 0
     with torch.no_grad():
         model.eval()
-        for images, labels, context_vectors in dataloader:
+        for images, labels, context_vectors, paths in dataloader:
             images = images.to(device)
             context_vectors = context_vectors.to(device)
             labels = labels.to(device)
 
             y_test_pred = model(images, context_vectors)
             sum_loss += criterion(y_test_pred, labels)
-            _, y_pred_tags = torch.max(y_test_pred, dim=1)
+            y_pred_scores, y_pred_tags = torch.max(y_test_pred, dim=1)
             num_correct += sum(labels == y_pred_tags).item()
 
             y_actual_list.extend(labels.tolist())
             y_pred_list.extend(y_pred_tags.tolist())
+            y_pred_scores_list.extend(y_pred_scores.tolist())
+            paths_list.extend(paths)
 
             y_pred_softmax = torch.softmax(y_test_pred, dim=1).cpu()
             y_pred_entropy_list.extend(entropy(y_pred_softmax, axis=1))
@@ -76,18 +82,28 @@ def testing(path_image_folder=PATH_IMAGE_FOLDER, path_csv_train=PATH_CSV_TRAIN, 
             if which == 4:
                 labels_SOC_code = labels.to(device="cpu", dtype=torch.float64).apply_(get_SOC_code_test)
                 y_pred_tags_SOC_code = y_pred_tags.to(device="cpu", dtype=torch.float64).apply_(get_SOC_code_test)
-                num_correct_test += sum(labels_SOC_code == y_pred_tags_SOC_code).item()
+                correct_SOC_code = labels_SOC_code == y_pred_tags_SOC_code
+                num_correct_test += sum(correct_SOC_code).item()
+                test4_list.extend(correct_SOC_code.tolist())
+                df = pd.DataFrame(list(zip(y_actual_list, y_pred_list, y_pred_entropy_list, y_pred_scores_list, test4_list)),
+                           columns=['actual class', 'predicted class', 'entropy', 'predicted class score', 'correct based SOC code'])
+                df.to_csv(path_results, index=False)
 
             if which == 3:
-                labels_SOC_code = labels.to(device="cpu", dtype=torch.float64).apply_(get_SOC_code_train)
-                y_pred_tags_SOC_code = y_pred_tags.to(device="cpu", dtype=torch.float64).apply_(get_SOC_code_test)
-                num_correct_test += sum(
-                    [1 if labels_SOC_code[i] == y_pred_tags_SOC_code[i] and labels[i] != y_pred_tags[i] else 0 for i in
-                     range(len(labels))])
+                labels_SOC_code = labels.to(device="cpu", dtype=torch.float64).apply_(get_SOC_code_test)
+                y_pred_tags_SOC_code = y_pred_tags.to(device="cpu", dtype=torch.float64).apply_(get_SOC_code_train)
+                errors_based_contest = [1 if labels_SOC_code[i] == y_pred_tags_SOC_code[i] and labels[i] != y_pred_tags[i] else 0 for i in
+                     range(len(labels))]
+                num_correct_test += sum(errors_based_contest)
+                test3_list.extend(errors_based_contest)
+                df = pd.DataFrame(list(zip(y_actual_list, y_pred_list, y_pred_entropy_list, y_pred_scores_list, test3_list)),
+                          columns=['actual class', 'predicted class', 'entropy', 'predicted class score', 'errors based contest'])
+                df.to_csv(path_results, index=False)
 
-    df_test = pd.DataFrame(list(zip(y_actual_list, y_pred_list, y_pred_entropy_list)),
-                           columns=['actual class', 'predicted class', 'entropy'])
-    df_test.to_csv(path_results, index=False)
+    if which != 4 and which != 3:
+        df = pd.DataFrame(list(zip(y_actual_list, y_pred_list, y_pred_entropy_list, y_pred_scores_list)),
+                               columns=['actual class', 'predicted class', 'entropy', 'predicted class score'])
+        df.to_csv(path_results, index=False)
 
     print("saved to: ", path_results)
     print("loss: " + str(sum_loss.item() / len(y_actual_list)))

@@ -62,4 +62,4 @@ class ImageAndTextDataset(ImageFolder):
             # add randomness to the context vector
             vector = self.context_vectors[context_vector_label] + torch.normal(mean=0.0, std=STDEV, size=self.context_vectors[context_vector_label].size())
         
-        return image, label, vector
+        return image, label, vector, path
