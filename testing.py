@@ -16,7 +16,8 @@ WORKERS = 4
 NUM_CLASSES = 1050
 
 
-def testing(path_image_train=PATH_IMAGE_FOLDER, path_image_test=PATH_IMAGE_FOLDER, path_csv_train=PATH_CSV_TRAIN, path_csv_test=PATH_CSV_TRAIN,
+def testing(path_image_train=PATH_IMAGE_FOLDER, path_image_test=PATH_IMAGE_FOLDER, path_csv_train=PATH_CSV_TRAIN,
+            path_csv_test=PATH_CSV_TRAIN,
             path_model=PATH_MODEL, path_results=PATH_RESULTS, which=1, mode="test"):
     transform = transforms.Compose(
         [transforms.Resize(size=(224, 224)),
@@ -42,18 +43,18 @@ def testing(path_image_train=PATH_IMAGE_FOLDER, path_image_test=PATH_IMAGE_FOLDE
     label_to_context_vector_label_dict_test = {label: path.split("/")[-2] for path, label in dataset_test.samples}
 
     dataset_train = ImageAndTextDataset(path=path_image_train,
-                                       transforms=transform,
-                                       target_transforms=None,
-                                       vector_csv_path=path_csv_test, mode=mode)
+                                        transforms=transform,
+                                        target_transforms=None,
+                                        vector_csv_path=path_csv_test, mode=mode)
     label_to_context_vector_label_dict_train = {label: path.split("/")[-2] for path, label in dataset_train.samples}
 
     df_test = pd.read_csv(path_csv_test)
     get_SOC_code_test = lambda label: \
-    df_test[df_test.iloc[:, 0] == label_to_context_vector_label_dict_test[label]]["O*NET-SOC Code"].iloc[0]
+        df_test[df_test.iloc[:, 0] == label_to_context_vector_label_dict_test[label]]["O*NET-SOC Code"].iloc[0]
 
     df_train = pd.read_csv(path_csv_train)
     get_SOC_code_train = lambda label: \
-    df_train[df_train.iloc[:, 0] == label_to_context_vector_label_dict_train[label]]["O*NET-SOC Code"].iloc[0]
+        df_train[df_train.iloc[:, 0] == label_to_context_vector_label_dict_train[label]]["O*NET-SOC Code"].iloc[0]
 
     y_pred_list = []
     y_actual_list = []
@@ -91,24 +92,29 @@ def testing(path_image_train=PATH_IMAGE_FOLDER, path_image_test=PATH_IMAGE_FOLDE
                 correct_SOC_code = labels_SOC_code == y_pred_tags_SOC_code
                 num_correct_test += sum(correct_SOC_code).item()
                 test4_list.extend(correct_SOC_code.tolist())
-                df = pd.DataFrame(list(zip(y_actual_list, y_pred_list, y_pred_entropy_list, y_pred_scores_list, test4_list)),
-                           columns=['actual class', 'predicted class', 'entropy', 'predicted class score', 'correct based SOC code'])
+                df = pd.DataFrame(list(
+                    zip(paths_list, y_actual_list, y_pred_list, y_pred_entropy_list, y_pred_scores_list, test4_list)),
+                                  columns=['path', 'actual class', 'predicted class', 'entropy',
+                                           'predicted class score', 'correct based SOC code'])
                 df.to_csv(path_results, index=False)
 
             if which == 3:
                 labels_SOC_code = labels.to(device="cpu", dtype=torch.float64).apply_(get_SOC_code_test)
                 y_pred_tags_SOC_code = y_pred_tags.to(device="cpu", dtype=torch.float64).apply_(get_SOC_code_train)
-                errors_based_contest = [1 if labels_SOC_code[i] == y_pred_tags_SOC_code[i] and labels[i] != y_pred_tags[i] else 0 for i in
-                     range(len(labels))]
+                errors_based_contest = [
+                    1 if labels_SOC_code[i] == y_pred_tags_SOC_code[i] and labels[i] != y_pred_tags[i] else 0 for i in
+                    range(len(labels))]
                 num_correct_test += sum(errors_based_contest)
                 test3_list.extend(errors_based_contest)
-                df = pd.DataFrame(list(zip(y_actual_list, y_pred_list, y_pred_entropy_list, y_pred_scores_list, test3_list)),
-                          columns=['actual class', 'predicted class', 'entropy', 'predicted class score', 'errors based contest'])
+                df = pd.DataFrame(list(
+                    zip(paths_list, y_actual_list, y_pred_list, y_pred_entropy_list, y_pred_scores_list, test3_list)),
+                                  columns=['path', 'actual class', 'predicted class', 'entropy',
+                                           'predicted class score', 'errors based contest'])
                 df.to_csv(path_results, index=False)
 
     if which != 4 and which != 3:
-        df = pd.DataFrame(list(zip(y_actual_list, y_pred_list, y_pred_entropy_list, y_pred_scores_list)),
-                               columns=['actual class', 'predicted class', 'entropy', 'predicted class score'])
+        df = pd.DataFrame(list(zip(paths_list, y_actual_list, y_pred_list, y_pred_entropy_list, y_pred_scores_list)),
+                          columns=['path', 'actual class', 'predicted class', 'entropy', 'predicted class score'])
         df.to_csv(path_results, index=False)
 
     print("saved to: ", path_results)
@@ -146,19 +152,23 @@ def run_test(which=1, path_csv_test=PATH_CSV_TRAIN):
 
 
 def run_all_our_test():
-    # print("test 1:")
-    # run_test(which=1, path_csv_test=PATH_CSV_TRAIN)
-    #
-    # print("test 3:")
-    # run_test(which=3, path_csv_test="/home/context/facial_feature_impact_comparison/extracted_data/test3.csv")
-    #
-    # print("test 3 inside family:")
-    # run_test(which=3,
-    #          path_csv_test="/home/context/facial_feature_impact_comparison/extracted_data/test3_inside_family.csv")
-    #
-    # print("test 3 outside family:")
-    # run_test(which=3,
-    #          path_csv_test="/home/context/facial_feature_impact_comparison/extracted_data/test3_outside_family.csv")
+    print("test 1:")
+    run_test(which=1, path_csv_test=PATH_CSV_TRAIN)
+
+    print("test 3:")
+    run_test(which=3, path_csv_test="/home/context/facial_feature_impact_comparison/extracted_data/test3.csv")
+
+    print("test 3 inside family:")
+    run_test(which=3,
+             path_csv_test="/home/context/facial_feature_impact_comparison/extracted_data/test3_inside_family.csv")
+
+    print("test 3 outside family:")
+    run_test(which=3,
+             path_csv_test="/home/context/facial_feature_impact_comparison/extracted_data/test3_outside_family.csv")
+
+    print("test 3 new:")
+    run_test(which=3,
+             path_csv_test="/home/context/facial_feature_impact_comparison/extracted_data/test3_new.csv")
 
     print("test 4:")
     run_test(which=4, path_csv_test="/home/context/facial_feature_impact_comparison/extracted_data/test4.csv")
@@ -179,5 +189,5 @@ def run_test_sanity_check():
 
 
 if __name__ == '__main__':
-    # run_test_sanity_check()
+    run_test_sanity_check()
     run_all_our_test()
