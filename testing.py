@@ -180,7 +180,7 @@ def run_all_our_test():
 
     print("test 2_3:")
     run_test(which=2,
-             path_csv_test="/home/context/facial_feature_impact_comparison/extracted_data/occupations_vectors/test2_3csv")
+             path_csv_test="/home/context/facial_feature_impact_comparison/extracted_data/occupations_vectors/test2_3.csv")
 
     print("test 3:")
     run_test(which=3,
