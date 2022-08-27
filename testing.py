@@ -121,12 +121,13 @@ def testing(path_image_train=PATH_IMAGE_FOLDER, path_image_test=PATH_IMAGE_FOLDE
         df.to_csv(path_results, index=False)
 
     print("saved to: ", path_results)
-    print("loss: " + str(sum_loss.item() / len(y_actual_list)))
-    print("accuracy: " + str(num_correct / len(y_actual_list)))
     if which == 2:
+        print("accuracy: " + str(num_correct / len(y_actual_list)))
         print("percent errors based on context: " + str(num_correct_test / (len(y_actual_list) - num_correct)))
-    if which == 3:
+    elif which == 3:
         print("accuracy based SOC code: " + str(num_correct_test / len(y_actual_list)))
+    else:
+        print("accuracy: " + str(num_correct / len(y_actual_list)))
 
 
 def load_model_and_optimizer_loc(model: torch.nn.Module, model_location=None):
