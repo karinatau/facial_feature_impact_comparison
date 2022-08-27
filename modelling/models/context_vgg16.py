@@ -11,6 +11,9 @@ LEN_CONTEXT_VECTOR = 15
 
 
 class ContextVGG(torchvision.models.VGG):
+    """
+    VGG model that combines a context vector
+    """
     def __init__(
             self, features: nn.Module,
             num_classes: int = 1000, init_weights: bool = True, dropout: float = 0.5) -> None:
@@ -39,6 +42,9 @@ class ContextVGG(torchvision.models.VGG):
 
 
 def context_vgg16(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> ContextVGG:
+    """
+    Returns the ContextVGG model
+    """
     if pretrained:
         kwargs["init_weights"] = False
     model = ContextVGG(vgg.make_layers(cfg, batch_norm=True), **kwargs)
